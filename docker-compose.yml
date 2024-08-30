@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:  
+  insurance-catalog:
+    image: mockserver/mockserver:5.14.0
+    ports:
+      - 1080:1080
+    environment:
+      MOCKSERVER_PROPERTY_FILE: /insurance-catalog/mockserver.properties
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /insurance-catalog/initializerCatalog.json
+    volumes:
+      - type: bind
+        source: ./insurance-catalog
+        target: /insurance-catalog
+
+  # insurance-policy:
+  #   build:
+  #     context: insurance-policy/.
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - '9090:9090'
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=dev
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./create-topics.sh:/usr/bin/create-topics.sh
+    entrypoint: ["/usr/bin/create-topics.sh"]
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodbdata:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+volumes:
+  mysql-data:
+  mongodbdata:
